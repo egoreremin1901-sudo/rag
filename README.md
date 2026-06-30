@@ -1,4 +1,4 @@
-# Мой первый RAG pipeline
+ RAG pipeline
 
 Это учебный проект.
 
