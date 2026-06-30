@@ -94,7 +94,6 @@ metrics/02_rag_predictions.json
 metrics/02_rag_metrics.json
 ```
 
-Папка `metrics/` не добавлена в `.gitignore`, поэтому ее можно закоммитить и отправить на GitHub вместе с результатами.
 
 ## Главные файлы проекта
 
