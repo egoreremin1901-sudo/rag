@@ -23,7 +23,7 @@ from config import (
     RAG_MODEL_NAME,
     RETRIEVER_K,
 )
-from utils import calculate_metrics, judge_with_groq, read_json, save_json
+from utils import calculate_metrics, judge_with_groq, read_json, save_json, save_metrics_table
 
 
 def load_articles() -> list[dict]:
@@ -148,6 +148,7 @@ def generate_answer_with_rag(
 ) -> str:
     """Генерирует ответ локальной моделью, но уже с найденным RAG-контекстом."""
     prompt = make_prompt_with_rag(question, context, tokenizer)
+
     inputs = tokenizer(
         prompt,
         return_tensors="pt",
@@ -160,6 +161,9 @@ def generate_answer_with_rag(
             **inputs,
             max_new_tokens=RAG_MAX_NEW_TOKENS,
             do_sample=False,
+            temperature=None,
+            top_p=None,
+            top_k=None,
             pad_token_id=tokenizer.eos_token_id,
         )
 
@@ -199,44 +203,6 @@ def evaluate_answers(predictions: list[dict], ground_truth: dict[str, str]) -> d
     return {"run_name": "rag_chroma", "summary": summary, "rows": rows}
 
 
-def save_comparison(rag_metrics: dict) -> None:
-    """Делает понятную markdown-таблицу: baseline против RAG."""
-    baseline_path = METRICS_DIR / "01_llm_without_rag_metrics.json"
-    rows = []
-
-    if baseline_path.exists():
-        rows.append(read_json(baseline_path))
-    rows.append(rag_metrics)
-
-    lines = [
-        "# Сравнение baseline и RAG",
-        "",
-        "| Запуск | Exact match | BLEU | ROUGE-L | LLM as judge |",
-        "| --- | ---: | ---: | ---: | ---: |",
-    ]
-
-    for row in rows:
-        summary = row["summary"]
-        lines.append(
-            "| {run} | {exact} | {bleu} | {rouge} | {judge} |".format(
-                run=row["run_name"],
-                exact=format_score(summary["exact_match"]),
-                bleu=format_score(summary["bleu"]),
-                rouge=format_score(summary["rouge_l"]),
-                judge=format_score(summary["llm_as_judge"]),
-            )
-        )
-
-    (METRICS_DIR / "comparison.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
-def format_score(value: float | None) -> str:
-    """Красиво форматирует число для markdown-таблицы."""
-    if value is None:
-        return "skipped"
-    return f"{value:.3f}"
-
-
 def main() -> None:
     """Главный порядок запуска RAG-пайплайна."""
     articles = load_articles()
@@ -266,12 +232,12 @@ def main() -> None:
 
     save_json(predictions, METRICS_DIR / "02_rag_predictions.json")
     save_json(metrics, METRICS_DIR / "02_rag_metrics.json")
-    save_comparison(metrics)
+    save_metrics_table(METRICS_DIR)
 
     print("RAG готов.")
     print("Ответы: metrics/02_rag_predictions.json")
     print("Метрики: metrics/02_rag_metrics.json")
-    print("Сравнение: metrics/comparison.md")
+    print("Общая таблица: metrics/summary.md")
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ from config import (
     METRICS_DIR,
     QUESTIONS_PATH,
 )
-from utils import calculate_metrics, judge_with_groq, read_json, save_json
+from utils import calculate_metrics, judge_with_groq, read_json, save_json, save_metrics_table
 
 
 def load_questions() -> list[dict]:
@@ -73,6 +73,7 @@ def generate_answer(
 ) -> str:
     """Передает вопрос в модель и возвращает текст ответа."""
     prompt = make_prompt_without_rag(question, tokenizer)
+
     inputs = tokenizer(
         prompt,
         return_tensors="pt",
@@ -85,6 +86,9 @@ def generate_answer(
             **inputs,
             max_new_tokens=BASELINE_MAX_NEW_TOKENS,
             do_sample=False,
+            temperature=None,
+            top_p=None,
+            top_k=None,
             pad_token_id=tokenizer.eos_token_id,
         )
 
@@ -144,10 +148,12 @@ def main() -> None:
 
     save_json(predictions, METRICS_DIR / "01_llm_without_rag_predictions.json")
     save_json(metrics, METRICS_DIR / "01_llm_without_rag_metrics.json")
+    save_metrics_table(METRICS_DIR)
 
     print("Baseline без RAG готов.")
     print("Ответы: metrics/01_llm_without_rag_predictions.json")
     print("Метрики: metrics/01_llm_without_rag_metrics.json")
+    print("Общая таблица: metrics/summary.md")
 
 
 if __name__ == "__main__":

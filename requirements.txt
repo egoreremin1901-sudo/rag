@@ -14,4 +14,3 @@ tqdm==4.67.1
 rouge-score==0.1.2
 sacrebleu==2.4.3
 ruff==0.8.2
-PySocks==1.7.1
